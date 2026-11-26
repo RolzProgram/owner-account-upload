@@ -158,7 +158,7 @@
     e.preventDefault();
     const btn = document.getElementById('btn');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spin"></span>Reading documents… (up to 1 min)';
+    btn.innerHTML = '<span class="spin"></span>Uploading… / جاري الرفع';
     document.getElementById('msg').style.display = 'none';
 
     const $ = function (id) { return document.getElementById(id); };
@@ -176,19 +176,9 @@
         .then(function (j) {
           if (!j.ok) throw new Error(j.error || 'Upload failed');
           const r = j.result;
-          const lines = [
-            '<b>' + (r.isNew ? 'New customer added' : 'Customer updated') + ' (row ' + r.row + ')</b>',
-            'Name: ' + esc(r.name || '—'),
-            'VIN: ' + esc(r.vin || '—'),
-            'Chinese number: ' + esc(r.chinese || '—')
-          ];
-          if (r.issues.length) {
-            lines.push('<br><b>⚠️ Needs review / يحتاج مراجعة:</b>');
-            r.issues.forEach(function (i) { lines.push('• ' + esc(i)); });
-            show('warn', lines.join('<br>'));
-          } else {
-            show('ok', '✅ ' + lines.join('<br>'));
-          }
+          show('ok', '✅ <b>Done — ' + (r.files ? r.files + ' file(s) received' : 'files received') + '.</b> / تم استلام الملفات<br>' +
+                     'The details will be added automatically within a few minutes. You can upload the next customer now.<br>' +
+                     'سيتم إضافة التفاصيل تلقائياً خلال دقائق. يمكنك رفع العميل التالي الآن.');
           document.getElementById('f').reset();
           document.querySelectorAll('.file').forEach(function (w) { w.classList.remove('done'); });
           document.getElementById('mulkiya-count').textContent = 'Front and back? Select both photos together / الوجه والخلف: اختر الصورتين معاً';
