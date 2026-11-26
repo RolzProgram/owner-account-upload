@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Owner account upload</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #f2f4f7; margin: 0; padding: 16px; color: #1d2433; }
+    .card { max-width: 460px; margin: 0 auto; background: #fff; border-radius: 14px; padding: 22px; box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+    h1 { font-size: 19px; margin: 0 0 4px; }
+    .sub { color: #667085; font-size: 13px; margin-bottom: 18px; }
+    label { display: block; font-weight: 600; font-size: 14px; margin: 14px 0 6px; }
+    .ar { float: right; font-weight: 600; direction: rtl; }
+    .hint { font-weight: 400; color: #667085; font-size: 12px; }
+    input[type=tel], input[type=text] { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #d0d5dd; border-radius: 10px; }
+    .file { border: 1.5px dashed #c3c9d4; border-radius: 10px; padding: 12px; background: #fafbfc; }
+    .file input { width: 100%; font-size: 14px; }
+    .file.done { border-color: #12b76a; background: #ecfdf3; }
+    .or { text-align: center; color: #667085; font-size: 12px; margin: 10px 0; }
+    button { width: 100%; margin-top: 22px; padding: 14px; font-size: 16px; font-weight: 700; color: #fff; background: #1f3864; border: 0; border-radius: 10px; }
+    button:disabled { background: #98a2b3; }
+    .msg { margin-top: 16px; padding: 14px; border-radius: 10px; font-size: 14px; line-height: 1.5; display: none; }
+    .ok { background: #ecfdf3; color: #054f31; }
+    .warn { background: #fffaeb; color: #7a2e0e; }
+    .err { background: #fef3f2; color: #912018; }
+    .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: s 1s linear infinite; vertical-align: -2px; margin-right: 6px; }
+    @keyframes s { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1 id="title">Loading… / جاري التحميل</h1>
+  <div class="sub">Upload the customer's documents. PDF or photo. <span class="ar">ارفع مستندات العميل</span></div>
+
+  <form id="f" style="display:none">
+    <label>Customer phone * <span class="ar">رقم هاتف العميل</span></label>
+    <input type="tel" id="phone" placeholder="05X XXX XXXX" required>
+
+    <label>Passport * <span class="ar">الجواز</span></label>
+    <div class="file" id="w-passport"><input type="file" id="passport" accept="image/*,application/pdf" required></div>
+
+    <label>Mulkiya (car ownership card) * <span class="ar">ملكية السيارة</span></label>
+    <div class="file" id="w-mulkiya">
+      <input type="file" id="mulkiya" accept="image/*,application/pdf" multiple required>
+      <div class="or" id="mulkiya-count">Front and back? Select both photos together / الوجه والخلف: اختر الصورتين معاً</div>
+    </div>
+
+    <label>Car photos <span class="hint">(optional)</span> <span class="ar">صور السيارة</span></label>
+    <div class="file" id="w-car">
+      <input type="file" id="car" accept="image/*" multiple>
+      <div class="or" id="car-count">Up to 6 photos / حتى 6 صور</div>
+    </div>
+
+    <label>Chinese number - الرقم الصيني</label>
+    <div class="file" id="w-esim">
+      <input type="tel" id="chinese" placeholder="Type it: +86 1XX XXXX XXXX / اكتب الرقم">
+      <div class="or">— or upload a screenshot / أو ارفع صورة —</div>
+      <input type="file" id="esim" accept="image/*,application/pdf">
+    </div>
+
+    <button type="submit" id="btn">Submit / إرسال</button>
+  </form>
+
+  <div class="msg" id="msg"></div>
+</div>
+
+<script>
+  // Your Apps Script web app (the /exec URL). The page sends uploads here in the background.
+  const API = 'https://script.google.com/macros/s/AKfycbwUU1YgiHQNrkD4gVZmMYZHmqXGNkBaU9-VVprDzHNtZWHtA_pk4r_kgpJywEt9hw5P/exec';
+  const TOKEN = new URLSearchParams(location.search).get('d') || '';
+
+  // Check the dealer code and show the dealer's name.
+  fetch(API + '?action=info&d=' + encodeURIComponent(TOKEN))
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (!j.ok) throw new Error('invalid');
+      document.getElementById('title').textContent = j.name + ' — Owner account';
+      document.title = j.name + ' - Owner account';
+      document.getElementById('f').style.display = '';
+    })
+    .catch(function () {
+      document.getElementById('title').textContent = 'Invalid link / الرابط غير صحيح';
+    });
+  const MAX_PDF_MB = 15;
+  const MAX_MULKIYA_FILES = 4;
+  const MAX_CAR_PHOTOS = 6;
+
+  document.getElementById('car').addEventListener('change', function () {
+    const n = this.files.length;
+    document.getElementById('w-car').classList.toggle('done', n > 0);
+    document.getElementById('car-count').textContent = n ? n + ' photo(s) selected / ' + n + ' صورة' : 'Up to 6 photos / حتى 6 صور';
+  });
+
+  ['passport', 'mulkiya'].forEach(function (id) {
+    document.getElementById(id).addEventListener('change', function () {
+      document.getElementById('w-' + id).classList.toggle('done', this.files.length > 0);
+    });
+  });
+  document.getElementById('mulkiya').addEventListener('change', function () {
+    const n = this.files.length;
+    document.getElementById('mulkiya-count').textContent = n
+      ? n + ' file(s) selected / ' + n + ' ملف'
+      : 'Front and back? Select both photos together / الوجه والخلف: اختر الصورتين معاً';
+  });
+  // Chinese number box turns green when the dealer types a number OR picks a screenshot.
+  function markChinese() {
+    const typed = document.getElementById('chinese').value.trim() !== '';
+    const file = document.getElementById('esim').files.length > 0;
+    document.getElementById('w-esim').classList.toggle('done', typed || file);
+  }
+  document.getElementById('chinese').addEventListener('input', markChinese);
+  document.getElementById('esim').addEventListener('change', markChinese);
+
+  // Photos are shrunk to max 2000px JPEG before upload: faster on mobile data, still sharp enough for the AI.
+  function prepare(input) { return prepareFile(input.files[0]); }
+  function prepareAll(input, max, label) {
+    if (input.files.length > max) return Promise.reject(new Error(label + ': max ' + max + ' files'));
+    return Promise.all(Array.prototype.map.call(input.files, prepareFile));
+  }
+  function prepareFile(file) {
+    if (!file) return Promise.resolve(null);
+    const isPdf = file.type === 'application/pdf';
+    if (isPdf && file.size > MAX_PDF_MB * 1024 * 1024) return Promise.reject(new Error('PDF is larger than ' + MAX_PDF_MB + ' MB'));
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onerror = function () { reject(new Error('Could not read ' + file.name)); };
+      reader.onload = function () {
+        const dataUrl = reader.result;
+        const raw = { name: file.name, mimeType: file.type || 'application/octet-stream', data: dataUrl.split(',')[1] };
+        if (isPdf || !file.type.startsWith('image/')) return resolve(raw);
+        const img = new Image();
+        img.onerror = function () { resolve(raw); };   // e.g. HEIC on some browsers: send as-is
+        img.onload = function () {
+          const scale = Math.min(1, 2000 / Math.max(img.width, img.height));
+          const c = document.createElement('canvas');
+          c.width = Math.round(img.width * scale);
+          c.height = Math.round(img.height * scale);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          resolve({ name: file.name.replace(/\.[^.]+$/, '') + '.jpg', mimeType: 'image/jpeg',
+                    data: c.toDataURL('image/jpeg', 0.85).split(',')[1] });
+        };
+        img.src = dataUrl;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function show(cls, html) {
+    const m = document.getElementById('msg');
+    m.className = 'msg ' + cls;
+    m.innerHTML = html;
+    m.style.display = 'block';
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  document.getElementById('f').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span>Reading documents… (up to 1 min)';
+    document.getElementById('msg').style.display = 'none';
+
+    const $ = function (id) { return document.getElementById(id); };
+    Promise.all([prepare($('passport')), prepareAll($('mulkiya'), MAX_MULKIYA_FILES, 'Mulkiya'), prepare($('esim')),
+                 prepareAll($('car'), MAX_CAR_PHOTOS, 'Car photos')]).then(function (files) {
+      const payload = {
+        token: TOKEN,
+        phone: document.getElementById('phone').value,
+        chinese: document.getElementById('chinese').value,
+        passport: files[0], mulkiya: files[1], esim: files[2], carPhotos: files[3]
+      };
+      // Sent as text/plain so the browser posts directly (no extra CORS check), and without any Google sign-in.
+      fetch(API, { method: 'POST', body: JSON.stringify(payload) })
+        .then(function (res) { return res.json(); })
+        .then(function (j) {
+          if (!j.ok) throw new Error(j.error || 'Upload failed');
+          const r = j.result;
+          const lines = [
+            '<b>' + (r.isNew ? 'New customer added' : 'Customer updated') + ' (row ' + r.row + ')</b>',
+            'Name: ' + esc(r.name || '—'),
+            'VIN: ' + esc(r.vin || '—'),
+            'Chinese number: ' + esc(r.chinese || '—')
+          ];
+          if (r.issues.length) {
+            lines.push('<br><b>⚠️ Needs review / يحتاج مراجعة:</b>');
+            r.issues.forEach(function (i) { lines.push('• ' + esc(i)); });
+            show('warn', lines.join('<br>'));
+          } else {
+            show('ok', '✅ ' + lines.join('<br>'));
+          }
+          document.getElementById('f').reset();
+          document.querySelectorAll('.file').forEach(function (w) { w.classList.remove('done'); });
+          document.getElementById('mulkiya-count').textContent = 'Front and back? Select both photos together / الوجه والخلف: اختر الصورتين معاً';
+          document.getElementById('car-count').textContent = 'Up to 6 photos / حتى 6 صور';
+          btn.disabled = false;
+          btn.textContent = 'Upload another customer / عميل آخر';
+        })
+        .catch(function (err) {
+          show('err', '❌ ' + esc(err.message || err) + '<br>Check your internet and try again / تأكد من الإنترنت وحاول مرة أخرى');
+          btn.disabled = false;
+          btn.textContent = 'Submit / إرسال';
+        });
+    }).catch(function (err) {
+      show('err', '❌ ' + esc(err.message));
+      btn.disabled = false;
+      btn.textContent = 'Submit / إرسال';
+    });
+  });
+</script>
+</body>
+</html>
