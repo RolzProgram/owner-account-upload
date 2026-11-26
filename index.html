@@ -24,6 +24,12 @@
     .ok { background: #ecfdf3; color: #054f31; }
     .warn { background: #fffaeb; color: #7a2e0e; }
     .err { background: #fef3f2; color: #912018; }
+    .thanks { text-align: center; padding: 26px 6px 8px; display: none; }
+    .thanks .big { font-size: 54px; line-height: 1; }
+    .thanks h2 { margin: 12px 0 6px; font-size: 21px; }
+    .thanks p { color: #475467; font-size: 14px; line-height: 1.6; margin: 6px 0; }
+    .thanks .closeok { color: #12b76a; font-weight: 600; visibility: hidden; }
+    .fileerr { color: #b42318; font-size: 12px; margin-top: 6px; display: none; }
     .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: s 1s linear infinite; vertical-align: -2px; margin-right: 6px; }
     @keyframes s { to { transform: rotate(360deg); } }
   </style>
@@ -31,25 +37,28 @@
 <body>
 <div class="card">
   <h1 id="title">Loading… / جاري التحميل</h1>
-  <div class="sub">Upload the customer's documents. PDF or photo. <span class="ar">ارفع مستندات العميل</span></div>
+  <div class="sub" id="sub">Please upload your documents. PDF or photo. <span class="ar">يرجى رفع المستندات</span></div>
 
-  <form id="f" style="display:none">
-    <label>Customer phone * <span class="ar">رقم هاتف العميل</span></label>
-    <input type="tel" id="phone" placeholder="05X XXX XXXX" required>
+  <form id="f" style="display:none" novalidate>
+    <label>Phone number * <span class="ar">رقم الهاتف</span></label>
+    <input type="tel" id="phone" placeholder="05X XXX XXXX">
 
     <label>Passport * <span class="ar">الجواز</span></label>
-    <div class="file" id="w-passport"><input type="file" id="passport" accept="image/*,application/pdf" required></div>
+    <div class="file" id="w-passport"><input type="file" id="passport" accept="image/*,application/pdf">
+      <div class="fileerr" id="e-passport"></div></div>
 
     <label>Mulkiya (car ownership card) * <span class="ar">ملكية السيارة</span></label>
     <div class="file" id="w-mulkiya">
-      <input type="file" id="mulkiya" accept="image/*,application/pdf" multiple required>
+      <input type="file" id="mulkiya" accept="image/*,application/pdf" multiple>
       <div class="or" id="mulkiya-count">Front and back? Select both photos together / الوجه والخلف: اختر الصورتين معاً</div>
+      <div class="fileerr" id="e-mulkiya"></div>
     </div>
 
     <label>Car photos <span class="hint">(optional)</span> <span class="ar">صور السيارة</span></label>
     <div class="file" id="w-car">
       <input type="file" id="car" accept="image/*" multiple>
       <div class="or" id="car-count">Up to 6 photos / حتى 6 صور</div>
+      <div class="fileerr" id="e-car"></div>
     </div>
 
     <label>Chinese number - الرقم الصيني</label>
@@ -57,69 +66,59 @@
       <input type="tel" id="chinese" placeholder="Type it: +86 1XX XXXX XXXX / اكتب الرقم">
       <div class="or">— or upload a screenshot / أو ارفع صورة —</div>
       <input type="file" id="esim" accept="image/*,application/pdf">
+      <div class="fileerr" id="e-esim"></div>
     </div>
 
     <button type="submit" id="btn">Submit / إرسال</button>
   </form>
 
   <div class="msg" id="msg"></div>
+
+  <div class="thanks" id="thanks">
+    <div class="big">✅</div>
+    <h2>Thank you! / شكراً لك</h2>
+    <p>Your documents have been received.<br>تم استلام مستنداتك.</p>
+    <p class="closeok" id="closeok">You can close this page now. / يمكنك إغلاق الصفحة الآن.</p>
+  </div>
 </div>
 
 <script>
-  // Your Apps Script web app (the /exec URL). The page sends uploads here in the background.
+  // Your Apps Script web app (the /exec URL).
   const API = 'https://script.google.com/macros/s/AKfycbwUU1YgiHQNrkD4gVZmMYZHmqXGNkBaU9-VVprDzHNtZWHtA_pk4r_kgpJywEt9hw5P/exec';
   const TOKEN = new URLSearchParams(location.search).get('d') || '';
+  const SESSION = ((window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+                   : Date.now().toString(36) + '-' + Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9-]/g, '');
+  const MAX = { passport: 1, mulkiya: 4, esim: 1, car: 6 };
+  const DOC_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+  const MAX_PDF_MB = 15;
+  const $ = function (id) { return document.getElementById(id); };
 
-  // Check the dealer code and show the dealer's name.
+  // ── Talk to the script, with automatic retries ──
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function post(body, tries) {
+    tries = tries || 4;
+    return fetch(API, { method: 'POST', body: JSON.stringify(body) })
+      .then(function (r) { return r.json(); })
+      .then(function (j) { if (!j.ok) { const e = new Error(j.error || 'Failed'); e.final = true; throw e; } return j.result; })
+      .catch(function (e) {
+        if (e.final || tries <= 1) throw e;
+        return wait(2500).then(function () { return post(body, tries - 1); });
+      });
+  }
+
+  // Check the link and show the dealer's name.
   fetch(API, { method: 'POST', body: JSON.stringify({ action: 'info', token: TOKEN }) })
     .then(function (r) { return r.json(); })
     .then(function (j) {
       if (!j.ok) throw new Error('invalid');
-      document.getElementById('title').textContent = j.name + ' — Owner account';
+      $('title').textContent = j.name + ' — Owner account';
       document.title = j.name + ' - Owner account';
-      document.getElementById('f').style.display = '';
+      $('f').style.display = '';
     })
-    .catch(function () {
-      document.getElementById('title').textContent = 'Invalid link / الرابط غير صحيح';
-    });
-  const MAX_PDF_MB = 15;
-  const MAX_MULKIYA_FILES = 4;
-  const MAX_CAR_PHOTOS = 6;
+    .catch(function () { $('title').textContent = 'Invalid link / الرابط غير صحيح'; $('sub').style.display = 'none'; });
 
-  document.getElementById('car').addEventListener('change', function () {
-    const n = this.files.length;
-    document.getElementById('w-car').classList.toggle('done', n > 0);
-    document.getElementById('car-count').textContent = n ? n + ' photo(s) selected / ' + n + ' صورة' : 'Up to 6 photos / حتى 6 صور';
-  });
-
-  ['passport', 'mulkiya'].forEach(function (id) {
-    document.getElementById(id).addEventListener('change', function () {
-      document.getElementById('w-' + id).classList.toggle('done', this.files.length > 0);
-    });
-  });
-  document.getElementById('mulkiya').addEventListener('change', function () {
-    const n = this.files.length;
-    document.getElementById('mulkiya-count').textContent = n
-      ? n + ' file(s) selected / ' + n + ' ملف'
-      : 'Front and back? Select both photos together / الوجه والخلف: اختر الصورتين معاً';
-  });
-  // Chinese number box turns green when the dealer types a number OR picks a screenshot.
-  function markChinese() {
-    const typed = document.getElementById('chinese').value.trim() !== '';
-    const file = document.getElementById('esim').files.length > 0;
-    document.getElementById('w-esim').classList.toggle('done', typed || file);
-  }
-  document.getElementById('chinese').addEventListener('input', markChinese);
-  document.getElementById('esim').addEventListener('change', markChinese);
-
-  // Photos are shrunk to max 2000px JPEG before upload: faster on mobile data, still sharp enough for the AI.
-  function prepare(input) { return prepareFile(input.files[0]); }
-  function prepareAll(input, max, label) {
-    if (input.files.length > max) return Promise.reject(new Error(label + ': max ' + max + ' files'));
-    return Promise.all(Array.prototype.map.call(input.files, prepareFile));
-  }
+  // ── Photos are shrunk to max 2000px JPEG (faster on mobile data, still sharp enough to read) ──
   function prepareFile(file) {
-    if (!file) return Promise.resolve(null);
     const isPdf = file.type === 'application/pdf';
     if (isPdf && file.size > MAX_PDF_MB * 1024 * 1024) return Promise.reject(new Error('PDF is larger than ' + MAX_PDF_MB + ' MB'));
     return new Promise(function (resolve, reject) {
@@ -130,7 +129,7 @@
         const raw = { name: file.name, mimeType: file.type || 'application/octet-stream', data: dataUrl.split(',')[1] };
         if (isPdf || !file.type.startsWith('image/')) return resolve(raw);
         const img = new Image();
-        img.onerror = function () { resolve(raw); };   // e.g. HEIC on some browsers: send as-is
+        img.onerror = function () { resolve(raw); };
         img.onload = function () {
           const scale = Math.min(1, 2000 / Math.max(img.width, img.height));
           const c = document.createElement('canvas');
@@ -146,56 +145,88 @@
     });
   }
 
-  function show(cls, html) {
-    const m = document.getElementById('msg');
-    m.className = 'msg ' + cls;
-    m.innerHTML = html;
-    m.style.display = 'block';
+  // ── Silent upload: each file starts uploading the moment it is picked ──
+  const uploads = { passport: [], mulkiya: [], esim: [], car: [] };   // promises that resolve to Drive file IDs
+  let pending = 0;
+
+  function startUploads(slot) {
+    const input = $(slot);
+    const files = Array.prototype.slice.call(input.files, 0, MAX[slot]);
+    $('e-' + slot).style.display = 'none';
+    if (input.files.length > MAX[slot]) showFileError(slot, 'Max ' + MAX[slot] + ' files / الحد الأقصى ' + MAX[slot]);
+    uploads[slot] = files.map(function (file, i) {
+      pending++;
+      const p = prepareFile(file).then(function (prepared) {
+        const okType = slot === 'car' ? prepared.mimeType.indexOf('image/') === 0 : DOC_TYPES.indexOf(prepared.mimeType) !== -1;
+        if (!okType) { const e = new Error('Please use a JPG photo or PDF / يرجى استخدام صورة JPG أو PDF'); e.final = true; throw e; }
+        return post({ action: 'file', token: TOKEN, session: SESSION, slot: slot, index: i, file: prepared });
+      }).then(function (r) { return r.fileId; });
+      p.catch(function (e) { showFileError(slot, e.message); }).then(function () { pending--; });
+      return p;
+    });
   }
+  function showFileError(slot, text) { const el = $('e-' + slot); el.textContent = text; el.style.display = 'block'; }
+
+  ['passport', 'mulkiya', 'car', 'esim'].forEach(function (slot) {
+    $(slot).addEventListener('change', function () {
+      if (slot !== 'esim') $('w-' + slot).classList.toggle('done', this.files.length > 0);
+      startUploads(slot);
+    });
+  });
+  $('mulkiya').addEventListener('change', function () {
+    const n = this.files.length;
+    $('mulkiya-count').textContent = n ? n + ' file(s) selected / ' + n + ' ملف'
+      : 'Front and back? Select both photos together / الوجه والخلف: اختر الصورتين معاً';
+  });
+  $('car').addEventListener('change', function () {
+    const n = this.files.length;
+    $('car-count').textContent = n ? n + ' photo(s) selected / ' + n + ' صورة' : 'Up to 6 photos / حتى 6 صور';
+  });
+  function markChinese() {
+    $('w-esim').classList.toggle('done', $('chinese').value.trim() !== '' || $('esim').files.length > 0);
+  }
+  $('chinese').addEventListener('input', markChinese);
+  $('esim').addEventListener('change', markChinese);
+
+  // If uploads are still finishing, ask before the page is closed (only shows in that rare case).
+  let finishing = false;
+  window.addEventListener('beforeunload', function (e) {
+    if (finishing || pending > 0) { e.preventDefault(); e.returnValue = ''; }
+  });
+
+  function showMsg(cls, html) { const m = $('msg'); m.className = 'msg ' + cls; m.innerHTML = html; m.style.display = 'block'; }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
-  document.getElementById('f').addEventListener('submit', function (e) {
+  // ── Submit: thank-you appears immediately; the form is sent once the files are in ──
+  $('f').addEventListener('submit', function (e) {
     e.preventDefault();
-    const btn = document.getElementById('btn');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spin"></span>Uploading… / جاري الرفع';
-    document.getElementById('msg').style.display = 'none';
+    $('msg').style.display = 'none';
+    const digits = $('phone').value.replace(/\D/g, '');
+    if (digits.length < 9) return showMsg('err', 'Please enter your phone number / يرجى إدخال رقم الهاتف');
+    if (!$('passport').files.length) return showMsg('err', 'Please add your passport / يرجى إرفاق الجواز');
+    if (!$('mulkiya').files.length) return showMsg('err', 'Please add the Mulkiya / يرجى إرفاق ملكية السيارة');
 
-    const $ = function (id) { return document.getElementById(id); };
-    Promise.all([prepare($('passport')), prepareAll($('mulkiya'), MAX_MULKIYA_FILES, 'Mulkiya'), prepare($('esim')),
-                 prepareAll($('car'), MAX_CAR_PHOTOS, 'Car photos')]).then(function (files) {
-      const payload = {
-        token: TOKEN,
-        phone: document.getElementById('phone').value,
-        chinese: document.getElementById('chinese').value,
-        passport: files[0], mulkiya: files[1], esim: files[2], carPhotos: files[3]
-      };
-      // Sent as text/plain so the browser posts directly (no extra CORS check), and without any Google sign-in.
-      fetch(API, { method: 'POST', body: JSON.stringify(payload) })
-        .then(function (res) { return res.json(); })
-        .then(function (j) {
-          if (!j.ok) throw new Error(j.error || 'Upload failed');
-          const r = j.result;
-          show('ok', '✅ <b>Done — ' + (r.files ? r.files + ' file(s) received' : 'files received') + '.</b> / تم استلام الملفات<br>' +
-                     'The details will be added automatically within a few minutes. You can upload the next customer now.<br>' +
-                     'سيتم إضافة التفاصيل تلقائياً خلال دقائق. يمكنك رفع العميل التالي الآن.');
-          document.getElementById('f').reset();
-          document.querySelectorAll('.file').forEach(function (w) { w.classList.remove('done'); });
-          document.getElementById('mulkiya-count').textContent = 'Front and back? Select both photos together / الوجه والخلف: اختر الصورتين معاً';
-          document.getElementById('car-count').textContent = 'Up to 6 photos / حتى 6 صور';
-          btn.disabled = false;
-          btn.textContent = 'Upload another customer / عميل آخر';
-        })
-        .catch(function (err) {
-          show('err', '❌ ' + esc(err.message || err) + '<br>Check your internet and try again / تأكد من الإنترنت وحاول مرة أخرى');
-          btn.disabled = false;
-          btn.textContent = 'Submit / إرسال';
-        });
-    }).catch(function (err) {
-      show('err', '❌ ' + esc(err.message));
-      btn.disabled = false;
-      btn.textContent = 'Submit / إرسال';
-    });
+    $('f').style.display = 'none';
+    $('sub').style.display = 'none';
+    $('thanks').style.display = 'block';
+    finishing = true;
+
+    const collect = function (slot) { return Promise.all(uploads[slot]); };
+    Promise.all([collect('passport'), collect('mulkiya'), collect('esim'), collect('car')])
+      .then(function (ids) {
+        return post({ action: 'submit', token: TOKEN, session: SESSION, phone: $('phone').value, chinese: $('chinese').value,
+                      files: { passport: ids[0], mulkiya: ids[1], esim: ids[2], car: ids[3] } });
+      })
+      .then(function () {
+        finishing = false;
+        $('closeok').style.visibility = 'visible';
+      })
+      .catch(function (err) {
+        finishing = false;
+        $('thanks').style.display = 'none';
+        $('f').style.display = '';
+        showMsg('err', '❌ ' + esc(err.message || err) + '<br>Please try again / يرجى المحاولة مرة أخرى');
+      });
   });
 </script>
 </body>
