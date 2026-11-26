@@ -6,43 +6,122 @@
   <meta name="theme-color" content="#1f3864">
   <title>Owner account upload</title>
   <style>
+    /* ───────── Base layout (same for every dealer) ───────── */
     * { box-sizing: border-box; }
-    /* Each dealer gets its own colours (set from the link, see THEMES below). */
-    :root { --accent: #1f3864; --bg: #f2f4f7; --soft: #eef1f6; }
-    body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); margin: 0; padding: 16px; color: #1d2433; }
-    .card { max-width: 460px; margin: 0 auto; background: #fff; border-radius: 14px; padding: 0 22px 22px; box-shadow: 0 2px 10px rgba(0,0,0,.06); overflow: hidden; border-top: 6px solid var(--accent); }
-    .head { display: flex; align-items: center; gap: 12px; margin: 0 -22px 16px; padding: 16px 22px; background: var(--soft); }
-    .badge { flex: none; width: 44px; height: 44px; border-radius: 12px; background: var(--accent); color: #fff; font-weight: 800; font-size: 17px; display: flex; align-items: center; justify-content: center; letter-spacing: .5px; }
-    h1 { font-size: 19px; margin: 0; }
-    input[type=tel]:focus, input[type=text]:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
-    .sub { color: #667085; font-size: 13px; margin-bottom: 18px; }
-    label { display: block; font-weight: 600; font-size: 14px; margin: 14px 0 6px; }
+    :root {
+      --page: #f2f4f7; --card: #fff; --text: #1d2433; --muted: #667085; --accent: #1f3864; --on-accent: #fff;
+      --field: #fff; --line: #d0d5dd; --box: #fafbfc; --done: #ecfdf3; --done-line: #12b76a;
+      --radius: 14px; --field-radius: 10px; --btn-radius: 10px;
+      --font: -apple-system, Segoe UI, Roboto, Arial, sans-serif; --font-head: var(--font);
+    }
+    body { font-family: var(--font); background: var(--page); margin: 0; padding: 16px; color: var(--text); min-height: 100vh; }
+    .card { position: relative; max-width: 460px; margin: 0 auto; background: var(--card); border-radius: var(--radius); padding: 0 22px 24px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+    .head { position: relative; display: flex; align-items: center; gap: 14px; margin: 0 -22px 18px; padding: 22px; min-height: 96px; }
+    .badge { position: relative; z-index: 1; flex: none; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; }
+    .title { position: relative; z-index: 1; }
+    h1 { font-family: var(--font-head); font-size: 24px; line-height: 1.15; margin: 0; }
+    .subtitle { font-size: 13px; opacity: .8; margin-top: 4px; }
+    .sub { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+    label { display: block; font-weight: 600; font-size: 14px; margin: 16px 0 6px; }
     .ar { float: right; font-weight: 600; direction: rtl; }
-    .hint { font-weight: 400; color: #667085; font-size: 12px; }
-    input[type=tel], input[type=text] { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #d0d5dd; border-radius: 10px; }
-    .file { border: 1.5px dashed #c3c9d4; border-radius: 10px; padding: 12px; background: #fafbfc; }
-    .file input { width: 100%; font-size: 14px; }
-    .file.done { border-color: #12b76a; background: #ecfdf3; }
-    .or { text-align: center; color: #667085; font-size: 12px; margin: 10px 0; }
-    button { width: 100%; margin-top: 22px; padding: 14px; font-size: 16px; font-weight: 700; color: #fff; background: var(--accent); border: 0; border-radius: 10px; }
-    button:disabled { background: #98a2b3; }
-    .msg { margin-top: 16px; padding: 14px; border-radius: 10px; font-size: 14px; line-height: 1.5; display: none; }
+    .hint { font-weight: 400; color: var(--muted); font-size: 12px; }
+    input[type=tel], input[type=text] { width: 100%; padding: 12px 14px; font-size: 16px; font-family: inherit; color: var(--text);
+      background: var(--field); border: 1px solid var(--line); border-radius: var(--field-radius); }
+    input[type=tel]:focus, input[type=text]:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+    .file { border: 1.5px dashed var(--line); border-radius: var(--field-radius); padding: 12px; background: var(--box); transition: background .2s, border-color .2s; }
+    .file input[type=file] { width: 100%; font-size: 14px; font-family: inherit; color: var(--muted); }
+    .file input[type=file]::file-selector-button { font: inherit; font-weight: 600; margin-right: 10px; padding: 8px 14px; border: 0;
+      border-radius: calc(var(--field-radius) - 2px); background: var(--accent); color: var(--on-accent); cursor: pointer; }
+    .file.done { border-color: var(--done-line); border-style: solid; background: var(--done); }
+    .or { text-align: center; color: var(--muted); font-size: 12px; margin: 10px 0; }
+    button { width: 100%; margin-top: 26px; padding: 15px; font-size: 16px; font-weight: 700; font-family: var(--font-head);
+      color: var(--on-accent); background: var(--accent); border: 0; border-radius: var(--btn-radius); cursor: pointer; }
+    button:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+    .msg { margin-top: 16px; padding: 14px; border-radius: var(--field-radius); font-size: 14px; line-height: 1.5; display: none; }
     .ok { background: #ecfdf3; color: #054f31; }
-    .warn { background: #fffaeb; color: #7a2e0e; }
     .err { background: #fef3f2; color: #912018; }
-    .thanks { text-align: center; padding: 26px 6px 8px; display: none; }
-    .thanks .big { font-size: 54px; line-height: 1; }
-    .thanks h2 { margin: 12px 0 6px; font-size: 21px; }
-    .thanks p { color: #475467; font-size: 14px; line-height: 1.6; margin: 6px 0; }
-    .thanks .closeok { color: #12b76a; font-weight: 600; visibility: hidden; }
     .fileerr { color: #b42318; font-size: 12px; margin-top: 6px; display: none; }
-    .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: s 1s linear infinite; vertical-align: -2px; margin-right: 6px; }
-    @keyframes s { to { transform: rotate(360deg); } }
+    .thanks { text-align: center; padding: 26px 6px 8px; display: none; }
+    .thanks .mark { width: 72px; height: 72px; margin: 0 auto; border-radius: 50%; background: var(--accent); color: var(--on-accent);
+      display: flex; align-items: center; justify-content: center; font-size: 36px; }
+    .thanks h2 { font-family: var(--font-head); margin: 16px 0 6px; font-size: 24px; }
+    .thanks p { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 6px 0; }
+    .thanks .closeok { color: var(--done-line); font-weight: 600; visibility: hidden; }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+    /* ───────── Victor cars — motorsport garage ───────── */
+    .t-victor { --page: #E6E8EB; --card: #fff; --text: #1C1F24; --muted: #5F6670; --accent: #C8102E; --line: #C9CDD3; --box: #F4F5F7;
+      --radius: 4px; --field-radius: 3px; --btn-radius: 0;
+      --font: 'Saira', 'Cairo', sans-serif; --font-head: 'Saira Condensed', 'Cairo', sans-serif; }
+    .t-victor .card { box-shadow: 0 1px 0 #C9CDD3, 0 12px 30px rgba(28,31,36,.12); }
+    .t-victor .head { background: #1C1F24; color: #fff; overflow: hidden; }
+    .t-victor .title { padding-right: 64px; }
+    .t-victor .subtitle { white-space: nowrap; }
+    .t-victor .head::after { content: ''; position: absolute; top: -20px; right: -44px; width: 140px; height: 160px;
+      background: repeating-linear-gradient(-62deg, #C8102E 0 16px, #fff 16px 21px, transparent 21px 30px); opacity: .95; transform: skewX(-18deg); }
+    .t-victor .badge { background: #C8102E; color: #fff; transform: skewX(-12deg); border-radius: 2px; font-family: var(--font-head); font-style: italic; font-size: 20px; }
+    .t-victor h1 { font-style: italic; font-weight: 700; font-size: 30px; letter-spacing: .2px; }
+    .t-victor .file { border-style: solid; border-left: 4px solid #1C1F24; }
+    .t-victor .file.done { border-left-color: var(--done-line); }
+    .t-victor button { clip-path: polygon(0 0, 100% 0, 96% 100%, 0 100%); font-style: italic; font-size: 19px; letter-spacing: .3px; }
+
+    /* ───────── Saud — majlis elegance ───────── */
+    .t-saud { --page: #F2F6F4; --card: #FFFFFF; --text: #13302B; --muted: #5B716C; --accent: #0B4F45; --on-accent: #F5EBD3;
+      --line: #CBD8D4; --box: #F7FAF9; --radius: 20px; --field-radius: 12px; --btn-radius: 999px;
+      --font: 'Manrope', 'Noto Naskh Arabic', sans-serif; --font-head: 'Marcellus', 'Noto Naskh Arabic', serif; }
+    .t-saud .card { border: 1px solid #C6A15B; box-shadow: 0 18px 40px rgba(11,79,69,.10); }
+    .t-saud .head { color: #F5EBD3; border-bottom: 2px solid #C6A15B;
+      background-color: #0B4F45;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cg fill='none' stroke='%23C6A15B' stroke-opacity='.28' stroke-width='1'%3E%3Crect x='12' y='12' width='20' height='20'/%3E%3Crect x='12' y='12' width='20' height='20' transform='rotate(45 22 22)'/%3E%3C/g%3E%3C/svg%3E"); }
+    .t-saud .badge { border-radius: 50%; border: 1.5px solid #C6A15B; color: #C6A15B; background: rgba(11,79,69,.85);
+      font-family: 'Noto Naskh Arabic', serif; font-size: 24px; }
+    .t-saud h1 { font-weight: 400; font-size: 30px; letter-spacing: .5px; }
+    .t-saud label { font-weight: 600; }
+    .t-saud .file input[type=file]::file-selector-button { border-radius: 999px; color: #F5EBD3; }
+    .t-saud button { box-shadow: inset 0 0 0 1.5px #C6A15B; font-weight: 400; font-size: 18px; letter-spacing: .4px; }
+    .t-saud .thanks .mark { box-shadow: 0 0 0 4px #fff, 0 0 0 5.5px #C6A15B; }
+
+    /* ───────── Dream motors — night drive ───────── */
+    .t-dream { --page: #120B2E; --card: rgba(255,255,255,.06); --text: #F1EDFF; --muted: #B8AEDB; --accent: #B69CFF; --on-accent: #1A0F40;
+      --field: rgba(255,255,255,.07); --line: rgba(182,156,255,.35); --box: rgba(255,255,255,.04);
+      --done: rgba(52,211,153,.12); --done-line: #34D399; --radius: 24px; --field-radius: 14px; --btn-radius: 14px;
+      --font: 'Space Grotesk', 'Readex Pro', sans-serif; --font-head: 'Space Grotesk', 'Readex Pro', sans-serif; }
+    .t-dream body, body.t-dream { background:
+        radial-gradient(1.2px 1.2px at 12% 18%, #fff 50%, transparent 51%),
+        radial-gradient(1px 1px at 78% 9%, #fff 50%, transparent 51%),
+        radial-gradient(1.4px 1.4px at 64% 31%, #E4DAFF 50%, transparent 51%),
+        radial-gradient(1px 1px at 33% 52%, #fff 50%, transparent 51%),
+        radial-gradient(1.2px 1.2px at 88% 64%, #fff 50%, transparent 51%),
+        radial-gradient(1px 1px at 8% 83%, #E4DAFF 50%, transparent 51%),
+        radial-gradient(1.3px 1.3px at 52% 92%, #fff 50%, transparent 51%),
+        radial-gradient(120% 70% at 50% 0%, #3A1C7A 0%, #1E1050 45%, #120B2E 100%) fixed; }
+    .t-dream .card { border: 1px solid rgba(182,156,255,.28); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 30px 60px rgba(0,0,0,.35); }
+    .t-dream .head { background: transparent; padding-bottom: 6px; }
+    .t-dream .badge { border-radius: 50%; color: #B69CFF; border: 1.5px solid #B69CFF; box-shadow: 0 0 22px rgba(182,156,255,.45); font-size: 16px; }
+    .t-dream h1 { font-weight: 700; font-size: 30px; letter-spacing: -.5px; }
+    .t-dream input::placeholder { color: rgba(241,237,255,.45); }
+    .t-dream .err { background: rgba(240,68,56,.15); color: #FFC9C4; }
+    .t-dream .fileerr { color: #FFB4AB; }
+    .t-dream button { box-shadow: 0 10px 30px rgba(182,156,255,.35); }
+
+    /* ───────── Khalid Albloushi — desert dunes ───────── */
+    .t-khalid { --page: #FBF3E6; --card: #FFFDF9; --text: #3D1F0B; --muted: #8A6248; --accent: #C2410C; --line: #E8D3B8; --box: #FFF8EE;
+      --radius: 28px; --field-radius: 16px; --btn-radius: 18px;
+      --font: 'Outfit', 'Tajawal', sans-serif; --font-head: 'Outfit', 'Tajawal', sans-serif; }
+    .t-khalid .card { box-shadow: 0 20px 45px rgba(194,65,12,.12); }
+    .t-khalid .head { color: #5B2A0E; padding-bottom: 48px; background-color: #F8E3C4;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 460 60' preserveAspectRatio='none'%3E%3Cpath d='M0 38 C70 10 150 10 230 34 S380 58 460 26 V60 H0Z' fill='%23E9A55B' fill-opacity='.55'/%3E%3Cpath d='M0 50 C90 30 170 34 250 48 S400 62 460 44 V60 H0Z' fill='%23FFFDF9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: bottom; background-size: 100% 60px; }
+    .t-khalid .badge { border-radius: 50%; background: radial-gradient(circle at 35% 35%, #F59E0B, #C2410C); color: #FFF7EA; font-size: 17px; }
+    .t-khalid h1 { font-weight: 700; font-size: 28px; }
+    .t-khalid .file { border-style: solid; }
+    .t-khalid .sub { margin-top: -18px; }
   </style>
 </head>
 <body>
 <div class="card">
-  <div class="head"><div class="badge" id="badge">·</div><h1 id="title">Loading… / جاري التحميل</h1></div>
+  <div class="head"><div class="badge" id="badge">·</div><div class="title"><h1 id="title">Loading… / جاري التحميل</h1><div class="subtitle" id="subtitle"></div></div></div>
   <div class="sub" id="sub">Please upload your documents. PDF or photo. <span class="ar">يرجى رفع المستندات</span></div>
 
   <form id="f" style="display:none" novalidate>
@@ -81,7 +160,7 @@
   <div class="msg" id="msg"></div>
 
   <div class="thanks" id="thanks">
-    <div class="big">✅</div>
+    <div class="mark">✓</div>
     <h2>Thank you! / شكراً لك</h2>
     <p>Your documents have been received.<br>تم استلام مستنداتك.</p>
     <p class="closeok" id="closeok">You can close this page now. / يمكنك إغلاق الصفحة الآن.</p>
@@ -93,20 +172,28 @@
   const API = 'https://script.google.com/macros/s/AKfycbwUU1YgiHQNrkD4gVZmMYZHmqXGNkBaU9-VVprDzHNtZWHtA_pk4r_kgpJywEt9hw5P/exec';
   const TOKEN = new URLSearchParams(location.search).get('d') || '';
 
-  // One colour set per dealer, picked from the start of the link code (victor-…, saud-…).
+  // Each dealer has its own design (see the .t-… styles). Picked from the start of the link code.
   const THEMES = {
-    victor: { accent: '#B42318', bg: '#FBF1F0', soft: '#FDE9E7', badge: 'VC' },   // red
-    saud:   { accent: '#0F766E', bg: '#EEF8F6', soft: '#DDF3EF', badge: 'S'  },   // teal green
-    dream:  { accent: '#6D28D9', bg: '#F4F0FD', soft: '#EBE3FC', badge: 'DM' },   // purple
-    khalid: { accent: '#B45309', bg: '#FBF5EC', soft: '#FAEBD5', badge: 'KA' }    // amber
+    victor: { cls: 't-victor', badge: 'VC', color: '#1C1F24',
+              fonts: 'Saira+Condensed:ital,wght@1,700&family=Saira:wght@400;600;700&family=Cairo:wght@400;600;700' },
+    saud:   { cls: 't-saud',   badge: 'س',  color: '#0B4F45',
+              fonts: 'Marcellus&family=Manrope:wght@400;600;700&family=Noto+Naskh+Arabic:wght@400;600' },
+    dream:  { cls: 't-dream',  badge: 'DM', color: '#120B2E',
+              fonts: 'Space+Grotesk:wght@400;500;700&family=Readex+Pro:wght@400;600' },
+    khalid: { cls: 't-khalid', badge: 'KA', color: '#F8E3C4',
+              fonts: 'Outfit:wght@400;600;700&family=Tajawal:wght@400;500;700' }
   };
   (function applyTheme() {
     const t = THEMES[TOKEN.split('-')[0]];
     if (!t) return;
-    const r = document.documentElement.style;
-    r.setProperty('--accent', t.accent); r.setProperty('--bg', t.bg); r.setProperty('--soft', t.soft);
+    document.documentElement.classList.add(t.cls);
+    document.body.classList.add(t.cls);
     document.getElementById('badge').textContent = t.badge;
-    document.querySelector('meta[name=theme-color]').setAttribute('content', t.accent);   // phone browser bar colour
+    document.querySelector('meta[name=theme-color]').setAttribute('content', t.color);
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=' + t.fonts + '&display=swap';
+    document.head.appendChild(link);
   })();
   const SESSION = ((window.crypto && crypto.randomUUID) ? crypto.randomUUID()
                    : Date.now().toString(36) + '-' + Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9-]/g, '');
@@ -133,7 +220,8 @@
     .then(function (r) { return r.json(); })
     .then(function (j) {
       if (!j.ok) throw new Error('invalid');
-      $('title').innerHTML = esc(j.name) + '<div style="font-size:13px;font-weight:500;color:#667085;margin-top:2px">Owner account / حساب المالك</div>';
+      $('title').textContent = j.name;
+      $('subtitle').textContent = 'Owner account / حساب المالك';
       document.title = j.name + ' - Owner account';
       $('f').style.display = '';
     })
