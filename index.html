@@ -129,6 +129,23 @@
     .t-khalid h1 { font-weight: 700; font-size: 28px; }
     .t-khalid .file { border-style: solid; }
     .t-khalid .sub { margin-top: -18px; }
+    /* ───────── Malkiya — royal sapphire ───────── */
+    .t-malkiya { --page: #EEF2FB; --card: #FFFFFF; --text: #0B1E4D; --muted: #56658A; --accent: #1D3FA8; --line: #C9D3EA; --box: #F6F8FD;
+      --radius: 12px; --field-radius: 8px; --btn-radius: 8px;
+      --font: 'Lexend', 'IBM Plex Sans Arabic', sans-serif; --font-head: 'Lexend', 'IBM Plex Sans Arabic', sans-serif; }
+    .t-malkiya .card { box-shadow: 0 16px 40px rgba(11,30,77,.14); }
+    .t-malkiya .head { color: #fff; padding-bottom: 40px; margin-bottom: 8px;
+      background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 16' preserveAspectRatio='none'%3E%3Cpath d='M0 16 L0 8 L10 0 L20 8 L30 0 L40 8 L40 16Z' fill='%23FFFFFF'/%3E%3C/svg%3E") bottom / 40px 16px repeat-x,
+        linear-gradient(160deg, #1D3FA8 0%, #0B1E4D 100%); }
+    .t-malkiya .head::before { content: ''; position: absolute; left: 0; right: 0; bottom: 16px; height: 3px;
+      background: repeating-linear-gradient(90deg, #C8D2E8 0 20px, transparent 20px 40px); opacity: .6; }
+    .t-malkiya .badge { width: 40px; height: 40px; margin: 4px; background: #fff; color: #1D3FA8; transform: rotate(45deg); border-radius: 6px;
+      font-family: 'IBM Plex Sans Arabic', sans-serif; font-size: 20px; box-shadow: 0 0 0 3px rgba(255,255,255,.25); }
+    .t-malkiya .badge span { display: block; transform: rotate(-45deg); }
+    .t-malkiya h1 { font-weight: 600; font-size: 28px; letter-spacing: -.3px; }
+    .t-malkiya .file { border-style: solid; }
+    .t-malkiya .submit { letter-spacing: .3px; }
   </style>
 </head>
 <body>
@@ -193,14 +210,18 @@
     dream:  { cls: 't-dream',  badge: 'DM', color: '#120B2E',
               fonts: 'Space+Grotesk:wght@400;500;700&family=Readex+Pro:wght@400;600' },
     khalid: { cls: 't-khalid', badge: 'KA', color: '#F8E3C4',
-              fonts: 'Outfit:wght@400;600;700&family=Tajawal:wght@400;500;700' }
+              fonts: 'Outfit:wght@400;600;700&family=Tajawal:wght@400;500;700' },
+    malkiya: { cls: 't-malkiya', badge: 'م', color: '#0B1E4D', rotateBadge: true,
+              fonts: 'Lexend:wght@400;600;700&family=IBM+Plex+Sans+Arabic:wght@400;600' }
   };
   (function applyTheme() {
     const t = THEMES[TOKEN.split('-')[0]];
     if (!t) return;
     document.documentElement.classList.add(t.cls);
     document.body.classList.add(t.cls);
-    document.getElementById('badge').textContent = t.badge;
+    const badge = document.getElementById('badge');
+    if (t.rotateBadge) badge.innerHTML = '<span></span>', badge.firstChild.textContent = t.badge;
+    else badge.textContent = t.badge;
     document.querySelector('meta[name=theme-color]').setAttribute('content', t.color);
     const link = document.createElement('link');
     link.rel = 'stylesheet';
