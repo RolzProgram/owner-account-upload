@@ -146,6 +146,24 @@
     .t-malkiya h1 { font-weight: 600; font-size: 28px; letter-spacing: -.3px; }
     .t-malkiya .file { border-style: solid; }
     .t-malkiya .submit { letter-spacing: .3px; }
+    /* ───────── Alhmoudi — direct site (UAE flag identity) ───────── */
+    .t-alhmoudi { --page: #F1F3F2; --card: #FFFFFF; --text: #14201A; --muted: #5E6B64; --accent: #00843D; --line: #D3DBD6; --box: #F7F9F8;
+      --radius: 10px; --field-radius: 8px; --btn-radius: 8px;
+      --font: 'Inter Tight', 'Almarai', sans-serif; --font-head: 'Inter Tight', 'Almarai', sans-serif; }
+    .t-alhmoudi .card { box-shadow: 0 14px 36px rgba(20,32,26,.10); padding-top: 0; }
+    .t-alhmoudi .head { background: #fff; color: #14201A; padding-top: 30px; border-bottom: 1px solid #E3E8E5; overflow: hidden; }
+    .t-alhmoudi .head::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 10px;
+      background: linear-gradient(90deg, #EF3340 0 22%, transparent 22%),
+                  linear-gradient(180deg, #00843D 0 33.3%, #FFFFFF 33.3% 66.6%, #000000 66.6%); }
+    .t-alhmoudi .head::after { content: 'الحمودي'; position: absolute; right: 16px; top: 14px; font-family: 'Reem Kufi', sans-serif;
+      font-size: 34px; font-weight: 700; color: #00843D; opacity: .9; pointer-events: none; direction: rtl; }
+    .t-alhmoudi h1 { padding-right: 112px; }
+    .t-alhmoudi .subtitle { white-space: nowrap; }
+    .t-alhmoudi .badge { background: #EF3340; color: #fff; border-radius: 8px; font-family: 'Almarai', sans-serif; font-size: 24px; }
+    .t-alhmoudi h1 { font-weight: 700; font-size: 28px; letter-spacing: -.4px; }
+    .t-alhmoudi .subtitle { color: #5E6B64; opacity: 1; }
+    .t-alhmoudi .file { border-style: solid; }
+    .t-alhmoudi .thanks .mark { background: #00843D; box-shadow: 0 0 0 5px #fff, 0 0 0 7px #EF3340; }
   </style>
 </head>
 <body>
@@ -212,7 +230,9 @@
     khalid: { cls: 't-khalid', badge: 'KA', color: '#F8E3C4',
               fonts: 'Outfit:wght@400;600;700&family=Tajawal:wght@400;500;700' },
     malkiya: { cls: 't-malkiya', badge: 'م', color: '#0B1E4D', rotateBadge: true,
-              fonts: 'Lexend:wght@400;600;700&family=IBM+Plex+Sans+Arabic:wght@400;600' }
+              fonts: 'Lexend:wght@400;600;700&family=IBM+Plex+Sans+Arabic:wght@400;600' },
+    alhmoudi: { cls: 't-alhmoudi', badge: 'ح', color: '#FFFFFF',
+              fonts: 'Inter+Tight:wght@400;600;700&family=Almarai:wght@400;700&family=Reem+Kufi:wght@700' }
   };
   (function applyTheme() {
     const t = THEMES[TOKEN.split('-')[0]];
